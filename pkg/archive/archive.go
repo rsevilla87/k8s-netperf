@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -413,7 +414,7 @@ func WriteSpecificCSV(r result.ScenarioResults) error {
 	return nil
 }
 
-// WriteJSONResult sends the results as JSON to stdout
+// WriteJSONResult writes the results to a JSON archive and stdout.
 func WriteJSONResult(r result.ScenarioResults) error {
 	docs, err := BuildDocs(r, "k8s-netperf")
 	if err != nil {
@@ -423,7 +424,14 @@ func WriteJSONResult(r result.ScenarioResults) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(p))
+	p = append(p, '\n')
+	path := filepath.Join(fmt.Sprintf("result-%d.json", time.Now().Unix()))
+	if err := os.WriteFile(path, p, 0o644); err != nil {
+		return fmt.Errorf("failed to write JSON result archive: %w", err)
+	}
+	if _, err := os.Stdout.Write(p); err != nil {
+		return fmt.Errorf("failed to write JSON results to stdout: %w", err)
+	}
 	return nil
 }
 
